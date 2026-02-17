@@ -1,11 +1,16 @@
+# Normalize text files
 * text=auto eol=lf
 
-*.blade.php diff=html
+# Treat file types correctly for diffs
+*.php linguist-language=PHP
+*.blade.php linguist-vendored
 *.css diff=css
 *.html diff=html
 *.md diff=markdown
-*.php diff=php
 
+# Ignore certain files from GitHub language stats and exports
 /.github export-ignore
 CHANGELOG.md export-ignore
 .styleci.yml export-ignore
+/vendor/* linguist-vendored
+/node_modules/* linguist-vendored
