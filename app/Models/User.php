@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use Notifiable;
+    use HasApiTokens, Notifiable;
 
     protected $fillable = [
         'name',
@@ -23,7 +24,10 @@ class User extends Authenticatable
      */
     public function organizations(): BelongsToMany
     {
-        return $this->belongsToMany(Organization::class);
+        // return $this->belongsToMany(Organization::class, 'organization_user')
+        return $this->belongsToMany(Organization::class)
+                    ->withPivot('role')
+                    ->withTimestamps();
     }
 
     /**
