@@ -1,6 +1,6 @@
 # PM API
 
-A RESTful Project Management API built with Laravel, MySQL and Docker.
+A RESTful Project Management API built with Laravel 12, MySQL and Docker.
 
 ---
 
@@ -12,16 +12,22 @@ PM API is a backend application designed to manage:
 - Projects  
 - Tasks  
 - Task assignments to users  
+- Role-based access control (RBAC)
 
-The application follows RESTful principles and uses a relational database with proper foreign key constraints.  
-This project is fully containerized using Docker.
+The application follows RESTful principles and uses a relational database with proper foreign key constraints.
+
+Authentication is handled via Laravel Sanctum.  
+Authorization is implemented using middleware-based role control.
+
+The project is fully containerized using Docker.
 
 ---
 
 ## Tech Stack
 
 - PHP 8.3  
-- Laravel  
+- Laravel 12  
+- Laravel Sanctum (API Authentication)  
 - MySQL 8  
 - Nginx  
 - Docker & Docker Compose  
@@ -30,36 +36,111 @@ This project is fully containerized using Docker.
 
 ## Data Model
 
-**Relationships**
+### Relationships
 
 - **Organization** → has many **Projects**  
 - **Project** → belongs to **Organization**  
 - **Project** → has many **Tasks**  
 - **Task** → belongs to **Project**  
 - **Task** → can be assigned to multiple **Users** (many-to-many)  
+- **User** → can belong to multiple **Organizations** (many-to-many with role)
+
+### Pivot Tables
+
+- `organization_user`
+  - `user_id`
+  - `organization_id`
+  - `role` (admin | member)
+
+- `task_user`
+  - `user_id`
+  - `task_id`
 
 Relational integrity is enforced via foreign keys and pivot tables.
 
 ---
 
+## Authentication
+
+This API uses Laravel Sanctum for token-based authentication.
+
+Protected routes require:
+
+```
+Authorization: Bearer YOUR_TOKEN
+```
+
+Example of generating a token (development only):
+
+```bash
+docker compose exec app php artisan tinker
+```
+
+```php
+$user = App\Models\User::first();
+$user->createToken('api-token')->plainTextToken;
+```
+
+---
+
+## Authorization (RBAC)
+
+Role-based access control is implemented via middleware.
+
+Example:
+
+```php
+->middleware(['auth:sanctum', 'role:admin'])
+```
+
+Only users with the required role inside the organization can access specific endpoints.
+
+---
+
 ## Local Development Setup
 
-**1. Clone repository**
+### 1. Clone repository
 
-git clone git@github.com:nicola-simioni/pm-api.git  
+```bash
+git clone git@github.com:nicola-simioni/pm-api.git
 cd pm-api
+```
 
-**2. Start Docker containers**
+### 2. Start Docker containers
 
+```bash
 docker compose up -d --build
+```
 
-**3. Run migrations**
+### 3. Install dependencies
 
+```bash
+docker compose exec app composer install
+```
+
+### 4. Copy environment file
+
+```bash
+cp .env.example .env
+```
+
+### 5. Generate application key
+
+```bash
+docker compose exec app php artisan key:generate
+```
+
+### 6. Run migrations
+
+```bash
 docker compose exec app php artisan migrate
+```
 
 The API will be available at:
 
+```
 http://localhost:8000
+```
 
 ---
 
@@ -100,17 +181,35 @@ http://localhost:8000
 
 ## Example Requests
 
-**Create an organization**
+### Create an organization
 
+```bash
 curl -X POST http://localhost:8000/api/organizations \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Accept: application/json" \
   -H "Content-Type: application/json" \
   -d '{"name":"Acme Corp"}'
+```
 
-**Assign users to a task**
+### Assign users to a task (admin only)
 
+```bash
 curl -X POST http://localhost:8000/api/tasks/1/assign-users \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Accept: application/json" \
   -H "Content-Type: application/json" \
   -d '{"user_ids":[1,2]}'
+```
+
+---
+
+## Architecture Highlights
+
+- Clean separation of authentication and authorization  
+- Middleware-based role control  
+- Pivot-based RBAC design  
+- RESTful resource controllers  
+- Dockerized environment for reproducibility  
 
 ---
 
