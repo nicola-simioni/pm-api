@@ -1,5 +1,9 @@
 # PM API
 
+![Laravel](https://img.shields.io/badge/Laravel-12-orange)
+![PHP](https://img.shields.io/badge/PHP-8.3-blue)
+![License](https://img.shields.io/badge/License-MIT-green)
+
 A RESTful Project Management API built with Laravel 12, MySQL and Docker.
 
 ---
@@ -14,12 +18,12 @@ PM API is a backend application designed to manage:
 - Task assignments to users  
 - Role-based access control (RBAC)
 
-The application follows RESTful principles and uses a relational database with proper foreign key constraints.
+The API follows RESTful principles and uses a relational database with proper foreign key constraints.
 
-Authentication is handled via Laravel Sanctum.  
-Authorization is implemented using middleware-based role control.
+Authentication is handled via **Laravel Sanctum**.  
+Authorization is implemented using **middleware-based role control**.
 
-The project is fully containerized using Docker.
+The project is fully containerized using Docker for reproducibility.
 
 ---
 
@@ -47,53 +51,16 @@ The project is fully containerized using Docker.
 
 ### Pivot Tables
 
-- `organization_user`
-  - `user_id`
-  - `organization_id`
-  - `role` (admin | member)
+- `organization_user`  
+  - `user_id`  
+  - `organization_id`  
+  - `role` (admin | member)  
 
-- `task_user`
-  - `user_id`
-  - `task_id`
+- `task_user`  
+  - `user_id`  
+  - `task_id`  
 
 Relational integrity is enforced via foreign keys and pivot tables.
-
----
-
-## Authentication
-
-This API uses Laravel Sanctum for token-based authentication.
-
-Protected routes require:
-
-```
-Authorization: Bearer YOUR_TOKEN
-```
-
-Example of generating a token (development only):
-
-```bash
-docker compose exec app php artisan tinker
-```
-
-```php
-$user = App\Models\User::first();
-$user->createToken('api-token')->plainTextToken;
-```
-
----
-
-## Authorization (RBAC)
-
-Role-based access control is implemented via middleware.
-
-Example:
-
-```php
-->middleware(['auth:sanctum', 'role:admin'])
-```
-
-Only users with the required role inside the organization can access specific endpoints.
 
 ---
 
@@ -141,6 +108,49 @@ The API will be available at:
 ```
 http://localhost:8000
 ```
+
+---
+
+## Authentication
+
+This API uses **Laravel Sanctum** for token-based authentication.
+
+Protected routes require:
+
+```
+Authorization: Bearer YOUR_TOKEN
+```
+
+Example: generate a token (development only)
+
+```bash
+docker compose exec app php artisan tinker
+```
+
+```php
+$user = App\Models\User::first();
+$user->createToken('api-token')->plainTextToken;
+```
+
+Use the printed token in your requests.
+
+---
+
+## Authorization (RBAC)
+
+Role-based access control is implemented via middleware.  
+Only users with the proper role can access certain endpoints.
+
+Example:
+
+```php
+->middleware(['auth:sanctum', 'role:admin'])
+```
+
+Roles are stored in the pivot table `organization_user`:
+
+- `admin` → full access in the organization  
+- `member` → restricted access  
 
 ---
 
@@ -199,6 +209,14 @@ curl -X POST http://localhost:8000/api/tasks/1/assign-users \
   -H "Accept: application/json" \
   -H "Content-Type: application/json" \
   -d '{"user_ids":[1,2]}'
+```
+
+### Example unauthorized response
+
+```json
+{
+  "message": "Forbidden: insufficient role"
+}
 ```
 
 ---
